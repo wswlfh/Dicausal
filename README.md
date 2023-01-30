@@ -16,8 +16,8 @@ We propose a causal discovery system called DiCausal, which allows users to appl
 
 ```
 # install
-$ git clone 
-$ cd dicausal
+$ git clone git@github.com:wswlfh/Dicausal.git
+$ cd Dicausal
 
 # flask init
 $ cd api
