@@ -1,46 +1,51 @@
-# Getting Started with Create React App
+### Dicausal
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+We propose a causal discovery system called DiCausal, which allows users to apply their simple domain knowledge of how variables affect each other and then edit the graph during the causal discovery process interactively, without incurring too much burden. We experimentally demonstrate that such a way of incorporating domain knowledge into causal discovery algorithms can get better results compared with the pure data-driven methods.This project is the source code of *DiCausal: Exploiting Domain Knowledge for Interactive Causal Discovery*.This paper has been accepted by DASFAA 2023.
 
-## Available Scripts
+### Installing
 
-In the project directory, you can run:
+##### Version
 
-### `npm start`
+- Python 3.6 
+- Node.js 10.0.13+
+- Npm 8.6+
+- Yarn 1.13+
+- React.js 17.0.0+
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+##### Buliding
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+```
+# install
+$ git clone 
+$ cd dicausal
 
-### `npm test`
+# flask init
+$ cd api
+$ python3 -m venv venv
+$ source venv/bin/activate
+(venv) $ pip install flask python-dotenv
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+# frontend dev server:
+$ npm install
+$ yarn start
 
-### `npm run build`
+# backend dev server:
+$ yarn start-api
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+This will take a few seconds and then a browser window will open with the example application from React loaded from *http://localhost:3000*:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Getting Started
 
-### `npm run eject`
+Go to the home page and you will see three panels on the left, middle and right.
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+The left panel is the various configuration items of the algorithm. First, upload the dataset you want to analyze. The format, template and other requirements of the dataset will be explained later. Here, we first recommend using the sample dataset doc/example.csv.
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+The middle panel is used for causal discovery and inference in the form of force-oriented diagram. You can complete this process faster according to the above prompts and in combination with your own domain knowledge.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+The right panel shows a complete and comprehensive structural causal model diagram. You can generate expected results according to the operation of the middle panel
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### Contribution
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+If you're new to contributing to Open Source on Github, [this guide](https://guides.github.com/activities/contributing-to-open-source/) can help you get started. Please check out the [contribution guide](https://github.com/covid19india/covid19india-react/blob/master/CONTRIBUTING.md) for more details on how issues and pull requests work.
