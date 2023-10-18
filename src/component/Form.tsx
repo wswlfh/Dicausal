@@ -1,206 +1,230 @@
-import React, {useState} from 'react';
-import {
-    MinusCircleOutlined, PlusOutlined,
-    PlayCircleTwoTone, UploadOutlined, ExportOutlined
-} from '@ant-design/icons';
-import {
-    Button, Form, Space,
-    Collapse, Slider, Tooltip, InputNumber,
-    Row, Col, Select, Upload
-} from 'antd';
-import ReactDOM from "react-dom/client";
-import {PriorKnowledge} from "./MyGraphApp";
+import React, { useState } from 'react';
+import { MinusCircleOutlined, QuestionCircleOutlined, UploadOutlined, ExportOutlined } from "@ant-design/icons";
+import { Button, Form, Select, Space, Tooltip, Upload } from "antd";
+import globalConfig from './GlobalConfig';
+import { sendFormData } from './utils/api'
 
-const {Panel} = Collapse;
+const annotation = {
+    subGraph: '利用专家应用领域知识对参数进行划分和分组，形成子系统 ',
+    keyEffects: '关键指标表示子系统的终点。它们可能受到同一组变量及其上游组的关键影响。',
+    threshold: '阈值级别的高低影响因果发现的效果',
+    finalEffect: '最终指标是所有子系统的终点'
+}
 
-const areas = [
-    {label: 'plcg', value: 'plcg'},
-    {label: 'PIP3', value: 'PIP3'},
-    {label: 'PIP2', value: 'PIP2'},
-    {label: 'PKC', value: 'PKC'},
-    {label: 'PKA', value: 'PKA'},
-    {label: 'praf', value: 'praf'},
-    {label: 'pjnk', value: 'pjnk'},
-    {label: 'p38', value: 'p38'},
-    {label: 'pmek', value: 'pmek'},
-    {label: 'p4442', value: 'p4442'},
-    {label: 'pakts473', value: 'pakts473'},
-];
+interface FormData {
+    list: Array<{ sub: number, effect: string[], key_effect: string[] }>;
+    final_effect: string[];
+}
+
 
 const App: React.FC = () => {
-    //表单数据的毁回调使用
-    const onFinish = (values: any) => {
-        console.log('Received values of form:', values);
-    };
+    const [form] = Form.useForm();
 
-    //表格提交的等待状态
-    const [loadings, setLoadings] = useState<boolean[]>([]);
+    const [selectedItems, setSelectedItems] = useState<string[]>([]);
+    const [filteredOptions, setFilteredOptions] = useState<string[]>([]);
+    const [hasSetFilteredOptions, setHasSetFilteredOptions] = useState(false);
 
-
-    const annotation = {
-        subGraph: 'Apply domain knowledge to divide variables into groups to get causal relationships ',
-        keyEffects: 'Key effects  indicate the end of the sub-graph. They can be influenced by variables of the\n' +
-            'same group and key effects of its upstream groups. \n',
-        threshold: 'threshold is the limit of levels of getting the causal relationships',
-        finalEffect: 'Final effects indicate the end of the graph. They will not influence any other variables'
-    }
-
-    const IntegerStep = () => {
-        const [inputValue, setInputValue] = useState(1);
-        const onChange = (newValue: number) => {
-            setInputValue(newValue);
+    React.useEffect(() => {
+        const updateFilteredOptions = () => {
+            // 仅在第一次时设置 filteredOptions
+            if (!hasSetFilteredOptions) {
+                setFilteredOptions(globalConfig.getColumnTitles());
+                setHasSetFilteredOptions(true);  // 更新标志状态
+            }
         };
+        // 在这里添加监听器
+        globalConfig.addListener(updateFilteredOptions);
 
-        return (
-            <Row>
-                <Col span={10}>
-                    <Slider
-                        min={1}
-                        max={10}
-                        onChange={onChange}
-                        value={typeof inputValue === 'number' ? inputValue : 5}
-                    />
-                </Col>
-                <Col span={4}>
-                    <InputNumber
-                        min={1}
-                        max={10}
-                        defaultValue={5}
-                        style={{margin: '0 16px'}}
-                        value={inputValue}
-                        onChange={onChange}
-                    />
-                </Col>
-            </Row>
+        // 清理函数：移除监听器
+        return () => {
+            globalConfig.removeListener(updateFilteredOptions);
+        };
+    }, [hasSetFilteredOptions]);
 
-        );
+    React.useEffect(() => {
+        const updateForm = () => {
+            const newGlobalForm = globalConfig.getGlobalForm();
+            form.setFieldsValue(newGlobalForm);
+        };
+        globalConfig.addListener(updateForm);
+        // 在组件卸载时移除监听器
+        return () => {
+            // 假设你在 GlobalConfig 类中添加了 removeListener 方法
+            globalConfig.removeListener(updateForm);
+        };
+    }, [form]);
+
+
+
+    const onFinish = async (values: FormData) => {
+        console.log("Received values of form:", values);
+        globalConfig.setGlobalForm(values);
+        globalConfig.setIsDraw(true)
     };
+
+    const exportToJsonFile = () => {
+        const values = form.getFieldsValue();
+        const modifiedList = values.list.map((item: any, index: any) => {
+            return { sub: index, ...item };
+        });
+        const modifiedValues = { ...values, list: modifiedList };
+        const jsonString = JSON.stringify(modifiedValues, null, 2);
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "config.json";
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+
+    const beforeUpload = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const jsonString = e.target?.result?.toString();
+            if (jsonString) {
+                const values = JSON.parse(jsonString);
+                form.setFieldsValue(values);
+            }
+        };
+        reader.readAsText(file);
+        return false;
+    };
+
+
+
 
     return (
-        <Form name="configuration" onFinish={onFinish} autoComplete="off">
-            <Collapse>
-                <Panel header="Config" key="1">
-                    <Space style={{marginBottom: "15px"}}>
-                        <Upload>
-                            <Button>
-                                <UploadOutlined/> Upload
-                            </Button>
-                        </Upload>
-                        <Upload>
-                            <Button>
-                                <ExportOutlined/> Export
-                            </Button>
-                        </Upload>
-                    </Space>
-                    <Form.Item>
-                        <Space>
-                            <Tooltip title={annotation.subGraph} color={'blue'}>
-                                <Button type="dashed">sub-graphs</Button>
-                            </Tooltip>
-                            <Tooltip title={annotation.keyEffects} color={'blue'}>
-                                <Button type="dashed">key effects</Button>
-                            </Tooltip>
-                        </Space>
-                    </Form.Item>
-
-
-                    <Form.List name="config">
-                        {(fields, {add, remove}) => (
-                            <>
-
-                                {fields.map(({key, name, ...restField}) => (
-                                    <div>
-                                        <label>sub{key}</label>
-                                        <Space key={key} style={{display: 'flex',}} align="baseline">
-                                            <Form.Item
-                                                {...restField}
-
-                                                //name后面接的是input的value的key
-                                                name={[name, 'variable']}
-                                            >
-                                                <Select
-                                                    mode="multiple"
-                                                    allowClear
-                                                    style={{width: '160px'}}
-                                                    placeholder="Select variable"
-                                                    options={areas}/>
-                                            </Form.Item>
-                                            <Form.Item
-                                                {...restField}
-                                                //name后面接的是input的value的key
-                                                name={[name, 'key_effect']}
-                                            >
-                                                <Select
-                                                    mode="multiple"
-                                                    allowClear
-                                                    style={{width: '150px'}}
-                                                    placeholder="Select key effect"
-                                                    options={areas}/>
-                                            </Form.Item>
-                                            <MinusCircleOutlined onClick={() => remove(name)}/>
-                                        </Space>
-                                    </div>
-                                ))}
-                                <Form.Item>
-                                    <Button onClick={() => add()} block icon={<PlusOutlined/>}>
-                                        Add Sub-Graphs
-                                    </Button>
-                                </Form.Item>
-
-                                <Form.Item>
-                                    <Tooltip title={annotation.threshold} color={'blue'}>
-                                        <Button type="dashed">threshold</Button>
-                                    </Tooltip>
-                                    <IntegerStep/>
-                                </Form.Item>
-
-                                <Form.Item>
-                                    <Tooltip title={annotation.finalEffect} color={'blue'}>
-                                        <Button type="dashed">final effect</Button>
-                                    </Tooltip>
-
-                                    <Select
-                                        mode="multiple"
-                                        allowClear
-                                        style={{width: '150px'}}
-                                        placeholder="Select final effect"
-                                        options={areas}/>
-                                </Form.Item>
-                            </>
-                        )}
-                    </Form.List>
-                </Panel>
-            </Collapse>
-
-            <br/>
-            <Form.Item>
-                <Tooltip title={'Run'} color={'blue'}>
-                    <Button type="primary"
-                            htmlType="submit"
-                            style={{marginLeft: '80%'}}
-                            onClick={() => {
-                                setLoadings(prevLoadings => {
-                                    const newLoadings = [...prevLoadings];
-                                    newLoadings[0] = true;
-                                    return newLoadings;
-                                });
-                                //等待三秒执行
-                                setTimeout(() => {
-                                    //不转
-                                    setLoadings(prevLoadings => {
-                                        const newLoadings = [...prevLoadings];
-                                        newLoadings[0] = false;
-                                        return newLoadings;
-                                    });
-                                    ReactDOM.createRoot(
-                                        document.getElementById('prior-knowledge') as HTMLElement
-                                    ).render(<PriorKnowledge/>);
-                                }, 3000)
-                            }}
-                            loading={loadings[0]}>
-                        <PlayCircleTwoTone/>
+        <Form
+            form={form}
+            wrapperCol={{ span: 24 }}
+            autoComplete="off"
+            onFinish={onFinish}
+        >
+            <Space style={{ marginBottom: "15px" }}>
+                <Upload showUploadList={false} beforeUpload={beforeUpload}>
+                    <Button>
+                        <UploadOutlined /> 上传
                     </Button>
-                </Tooltip>
+                </Upload>
+                <Button onClick={exportToJsonFile}>
+                    <ExportOutlined /> 导出
+                </Button>
+            </Space>
+
+            <Form.Item>
+                <Space>
+                    <Tooltip title={annotation.subGraph} color={'blue'}>
+                        <QuestionCircleOutlined />
+                        <span>子系统</span>
+                    </Tooltip>
+                    <Tooltip title={annotation.keyEffects} color={'blue'}>
+                        <QuestionCircleOutlined />
+                        <span> 关键指标</span>
+                    </Tooltip>
+                </Space>
+            </Form.Item>
+
+            <Form.Item>
+                <Form.List name="list">
+                    {(subFields, subOpt) => (
+                        <div
+                            style={{ display: "flex", flexDirection: "column", rowGap: 16 }}
+                        >
+                            {subFields.map((subField) => (
+                                <div key={subField.key}>
+                                    <span>sub{subField.key}</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ flex: 1, marginRight: '10px' }}>
+                                            <Form.Item noStyle name={[subField.name, "effect"]}>
+                                                <Select
+                                                    mode="multiple"
+                                                    placeholder="选择一般参数"
+                                                    onChange={(values: string[]) => {
+                                                        values.forEach(value => {
+                                                            if (!selectedItems.includes(value)) {
+                                                                setSelectedItems(prevArray => [...prevArray, value]);
+                                                                setFilteredOptions(prevArray => prevArray.filter(e => e !== value));
+                                                            }
+                                                        });
+                                                    }}
+                                                    onDeselect={(value) => {
+                                                        setSelectedItems(prevArray => prevArray.filter(e => e !== value));
+                                                        setFilteredOptions(prevArray => [...prevArray, value]);
+                                                    }}
+                                                    options={filteredOptions.map((item) => ({
+                                                        value: item,
+                                                        label: item,
+                                                    }))}
+                                                />
+                                            </Form.Item>
+                                        </div>
+                                        <div style={{ flex: 1, marginRight: '10px' }}>
+                                            <Form.Item style={{ flex: 1, marginLeft: '10px' }} noStyle name={[subField.name, "key_effect"]}>
+                                                <Select
+                                                    mode="multiple"
+                                                    placeholder="选择关键指标"
+                                                    onChange={(values: string[]) => {
+                                                        values.forEach(value => {
+                                                            if (!selectedItems.includes(value)) {
+                                                                setSelectedItems(prevArray => [...prevArray, value]);
+                                                                setFilteredOptions(prevArray => prevArray.filter(e => e !== value));
+                                                            }
+                                                        });
+                                                    }}
+                                                    onDeselect={(value) => {
+                                                        setSelectedItems(prevArray => prevArray.filter(e => e !== value));
+                                                        setFilteredOptions(prevArray => [...prevArray, value]);
+                                                    }}
+                                                    options={filteredOptions.map((item) => ({
+                                                        value: item,
+                                                        label: item,
+                                                    }))}
+                                                />
+                                            </Form.Item>
+                                        </div>
+                                        <MinusCircleOutlined
+                                            onClick={() => {
+                                                subOpt.remove(subField.name);
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                            <Button type="dashed" onClick={() => subOpt.add()} block>
+                                + 添加子系统
+                            </Button>
+                        </div>
+                    )}
+                </Form.List>
+            </Form.Item>
+            <Form.Item label="最终指标" name="final_effect">
+                <Select
+                    mode="multiple"
+                    placeholder="选择最终指标"
+                    onChange={(values: string[]) => {
+                        values.forEach(value => {
+                            if (!selectedItems.includes(value)) {
+                                setSelectedItems(prevArray => [...prevArray, value]);
+                                setFilteredOptions(prevArray => prevArray.filter(e => e !== value));
+                            }
+                        });
+                    }}
+                    onDeselect={(value) => {
+                        setSelectedItems(prevArray => prevArray.filter(e => e !== value));
+                        setFilteredOptions(prevArray => [...prevArray, value]);
+                    }}
+                    options={filteredOptions.map((item) => ({
+                        value: item,
+                        label: item,
+                    }))}
+                />
+            </Form.Item>
+            <Form.Item>
+                <Button type="primary" htmlType="submit">
+                    提交
+                </Button>
             </Form.Item>
         </Form>
     );

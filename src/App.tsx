@@ -1,6 +1,9 @@
 import React from 'react';
 
 
+// expressApp.use(express.static('public'))
+
+
 function App() {
     return (
         <div className="App">
@@ -8,5 +11,6 @@ function App() {
         </div>
     );
 }
+
 
 export default App;

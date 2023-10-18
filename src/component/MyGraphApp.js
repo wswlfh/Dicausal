@@ -1,113 +1,14 @@
-import React, {useState} from 'react';
-import ReactDOM from 'react-dom';
-import {Col, Row, Layout} from 'antd';
+import React, { useContext, useRef, useState } from 'react';
+import ReactDOM from "react-dom/client";
+import { Col, Row, Layout, Drawer, notification, Skeleton, Radio, Image, Modal, Spin } from 'antd';
 import '../index.css';
-import Graphin, {Utils, Behaviors, GraphinContext, Components, NodeConfig} from '@antv/graphin';
-
+import Graphin, { Utils, Behaviors, GraphinContext, Components, NodeConfig } from '@antv/graphin';
 import G6 from '@antv/g6';
+import { LayoutContext } from "./Layout";
+import globalConfig from './GlobalConfig';
+import { sendFormData, sendAdjMatrix } from './utils/api';
+const { ZoomCanvas } = Behaviors;
 
-
-const {Header, Content, Footer, Sider} = Layout;
-const {ZoomCanvas} = Behaviors;
-const data = {
-    nodes: [
-        {
-            id: '0',
-            label: 'plcg',
-            comboId: 'sub0'
-        },
-        {
-            id: '1',
-            label: 'PIP3',
-            comboId: 'sub0'
-        },
-        {
-            id: '2',
-            label: 'PIP2',
-            comboId: 'sub0'
-        },
-        {
-            id: '3',
-            label: 'PKC',
-            comboId: 'sub1'
-        },
-        {
-            id: '4',
-            label: 'PKA',
-            comboId: 'sub1'
-        },
-        {
-            id: '5',
-            label: 'praf',
-            comboId: 'sub2'
-        },
-        {
-            id: '6',
-            label: 'pjnk',
-            comboId: 'sub1'
-        },
-        {
-            id: '7',
-            label: 'p38',
-            comboId: 'sub1'
-        },
-        {
-            id: '8',
-            label: 'pmek',
-            comboId: 'sub2'
-        },
-        {
-            id: '9',
-            label: 'p44/42',
-            comboId: 'sub2'
-        },
-        {
-            id: '10',
-            label: 'pakts473',
-        },
-    ],
-    edges: [
-        {
-            source: 'sub0',
-            target: 'sub1',
-        },
-        {
-            source: 'sub0',
-            target: 'sub2',
-        },
-        {
-            source: 'sub0',
-            target: '10',
-        },
-        {
-            source: 'sub1',
-            target: 'sub2',
-        },
-
-        {
-            source: 'sub1',
-            target: '10',
-        },
-        {
-            source: 'sub2',
-            target: '10',
-        },
-
-    ],
-    combos: [
-        {
-            id: 'sub0',
-            label: 'sub0'
-        },
-        {
-            id: 'sub1',
-            label: 'sub1'
-        },
-        {
-            id: 'sub2',
-            label: 'sub2'
-        }]
-};
 
 G6.registerNode(
     'background-animate',
@@ -193,33 +94,6 @@ G6.registerNode(
 );
 
 G6.registerEdge(
-    'line-growth',
-    {
-        afterDraw(cfg, group) {
-            const shape = group.get('children')[0];
-            const length = shape.getTotalLength();
-            shape.animate(
-                (ratio) => {
-                    // the operations in each frame. Ratio ranges from 0 to 1 indicating the prograss of the animation. Returns the modified configurations
-                    const startLen = ratio * length;
-                    // Calculate the lineDash
-                    const cfg = {
-                        lineDash: [startLen, length - startLen],
-                    };
-                    return cfg;
-                },
-                {
-                    repeat: true, // Whether executes the animation repeatly
-                    duration: 2000, // the duration for executing once
-                },
-            );
-        },
-
-    },
-    'line', // extend the built-in edge 'cubic'
-);
-
-G6.registerEdge(
     'line-dash',
     {
         afterDraw(cfg, group) {
@@ -251,43 +125,64 @@ G6.registerEdge(
     'line',
 );
 
+
 const GLOBAL_SETTING = {
-    BehaviorBind: (graph) => {
 
-        graph.on('node:mouseenter', (evt) => {
-            console.log(evt)
-            const {item} = evt;
-            graph.setItemState(item, 'hover', true);
-        });
+    BehaviorBind: (graph, threshold) => {
+        if (!graph) return;
+        const mouseenter = (evt) => {
+            const { item } = evt;
+            try {
+                graph.setItemState(item, 'hover', true);
 
-        graph.on('node:mouseleave', (evt) => {
-            const {item} = evt;
-            graph.setItemState(item, 'hover', false);
+            } catch (e) {
+                console.log(e);
+            }
+        }
+        const mouseleave = (evt) => {
+            const { item } = evt;
+            try {
+                graph.setItemState(item, 'hover', false);
+
+            } catch (e) {
+                console.log(e);
+            }
             //@ts-ignore
-        });
+        }
+        const resetEdges = e => {
+            try {
+                graph.getNodes().forEach(node => {
+                    try {
+                        graph.setItemState(node, 'dark', false);
+                        graph.setItemState(node, 'focus', false);
 
+                    } catch (e) {
+                        console.log(e);
+                    }
+                })
+                graph.getEdges().forEach(edge => {
+                    try {
+                        graph.setItemState(edge, 'dark', false);
+
+                    } catch (e) {
+                        console.log(e);
+                    }
+                })
+            } catch (e) {
+                console.log(e);
+            }
+
+
+            while (tempEdges.length > 0) {
+                graph.removeItem(tempEdges.pop())
+            }
+            //graph.refresh();
+
+        }
         const tempEdges = [];
-        graph.on('node:click', (evt) => {
-            const {item} = evt;
-            //全部节点
-            graph.getNodes().forEach(node => {
-                graph.setItemState(node, 'dark', true);
-            })
-            graph.getEdges().forEach(edge => {
-                graph.setItemState(edge, 'dark', true);
-            })
-
-            //本节点
-            graph.setItemState(item, 'dark', false);
-            graph.setItemState(item, 'focus', true)
-            //随机加边
-            let nodes = graph.getNodes();
-            for (let i = 0; i < Math.round(Math.random() * 3) + 1; i++) {
-                let source = item;
-                let target = nodes[Math.round(Math.random() * nodes.length)];
-                graph.setItemState(target, 'dark', false);
-                graph.setItemState(target, 'focus', true)
-
+        const addEdges = (target, sources) => {
+            for (let i = 0; i < sources.length; i++) {
+                let source = graph.findById(sources[i]);
                 graph.addItem('edge', {
                     type: 'line-dash',
                     source: source,
@@ -303,45 +198,221 @@ const GLOBAL_SETTING = {
                 let edge = graph.find('edge', (edge) => {
                     return edge.getSource() === source && edge.getTarget() === target;
                 })
+
                 tempEdges.push(edge);
             }
-        });
+        }
+        const ShowDescription = ({ threshold, threshold_1, threshold_2, threshold_3, nodeItem }) => {
+            const [value, setValue] = useState(threshold);  // 默认阈值级别设置为 'Low'
+            const onChange = (e) => {
+                console.log('radio checked', e.target.value);
+                setValue(e.target.value);
+                resetEdges();
 
-        graph.on('canvas:click', e => {
+                let shapMeanList
+                if (e.target.value === 'Low') {
+                    shapMeanList = threshold_1.shapMeanList;
+                } else if (e.target.value === 'Medium') {
+                    shapMeanList = threshold_2.shapMeanList;
+                } else if (e.target.value === 'High') {
+                    shapMeanList = threshold_3.shapMeanList;
+                }
+                if (shapMeanList) {
+                    let keys = Object.keys(shapMeanList);
+                    const g6Data = globalConfig.getG6Data();
+                    const nodes = g6Data.nodes;
+                    // 找出与 keys 匹配的节点 ID 集合
+                    const matchingIds = nodes
+                        .filter(node => keys.includes(node.label))
+                        .map(node => node.id);
+                    // 现在 matchingIds 包含与 keys 匹配的节点 ID
+                    addEdges(nodeItem, matchingIds);
+                }
+            };
+
+            const getImages = (thresholdData) => {
+                const { shap_1, shap_2, shap_3 } = thresholdData;
+                return (
+                    <Image.PreviewGroup>
+                        <Image height={200} width={350}
+                            style={{ objectFit: 'contain' }}
+                            src={`data:image/png;base64,${shap_1}`} />
+
+                        <Image height={200} width={350}
+                            style={{ objectFit: 'contain' }}
+                            src={`data:image/png;base64,${shap_2}`} />
+
+                        {/* <Image height={200} width={350}
+                            style={{ objectFit: 'contain' }}
+                            src={`data:image/png;base64,${shap_3}`} /> */}
+                        <Image height={200} width={350}
+                            style={{ objectFit: 'contain' }}
+                            src={`data:image/png;base64,${shap_3}`} />
+                    </Image.PreviewGroup>
+                );
+            };
+
+            return (
+                <div>
+                    <div>
+                        <span>阈值级别:   </span>
+                        <Radio.Group onChange={onChange} value={value}>
+                            <Radio value={"Low"}>Low</Radio>
+                            <Radio value={"Medium"}>Medium</Radio>
+                            <Radio value={"High"}>High</Radio>
+                        </Radio.Group>
+                    </div>
+                    <div>
+                        {/* {loading && <Skeleton active />}
+                        {!loading && value === 'Low' && getImages(threshold_1)}
+                        {!loading && value === 'Medium' && getImages(threshold_2)}
+                        {!loading && value === 'High' && getImages(threshold_3)} */}
+                        {value === 'Low' && getImages(threshold_1)}
+                        {value === 'Medium' && getImages(threshold_2)}
+                        {value === 'High' && getImages(threshold_3)}
+                    </div>
+                </div>
+            );
+        };
+        const nodeClick = (evt) => {
+            const { item } = evt;
+
+            //不是key effect 遣返
+            if (!GLOBAL_SETTING.key_effects.includes(item.getModel().label) && GLOBAL_SETTING.final_effect !== item.getModel().label) return;
+            //全部节点
             graph.getNodes().forEach(node => {
-                graph.setItemState(node, 'dark', false);
-                graph.setItemState(node, 'focus', false);
+                try {
+                    graph.setItemState(node, 'dark', true);
+
+                } catch (e) {
+                    console.log(e);
+                }
             })
             graph.getEdges().forEach(edge => {
-                graph.setItemState(edge, 'dark', false);
-            })
+                try {
+                    graph.setItemState(edge, 'dark', true);
 
-            while (tempEdges.length > 0) {
-                graph.removeItem(tempEdges.pop())
+                } catch (e) {
+                    console.log(e);
+                }
+            })
+            try {
+                //本节点
+                graph.setItemState(item, 'dark', false);
+                graph.setItemState(item, 'focus', true)
+
+            } catch (e) {
+                console.log(e);
             }
-            //graph.refresh();
-        })
+
+            let addKey = []
+            if (GLOBAL_SETTING.key_effects.includes(item.getModel().label)) {
+                const neighbors = item.getNeighbors('source');  // 获取所有源（即入边）邻居节点
+                addKey = neighbors.map(neighbor => neighbor.getModel().label);  // 获取邻居节点的 ID
+            } else {
+                addKey = GLOBAL_SETTING.key_effects
+            }
+            console.log('addKeyaddKeyaddKey', addKey);
+
+            notification.open({
+                message: '正在加载...',
+                description: <Spin size="large" />,
+                duration: 0,  // 0 表示不会自动关闭
+                key: 'loadingNotification',
+                placement: 'topRight', // 设置弹窗出现的位置
+            });
+            sendFormData(globalConfig.getGlobalForm(), item.getModel().label, addKey)
+                .then((response) => {
+                    console.log('Response data:', response);
+                    //关闭等待弹窗，重新设置延时
+                    notification.open({
+                        duration: 0.1,  // 0 表示不会自动关闭
+                        key: 'loadingNotification',
+                        placement: 'topRight', // 设置弹窗出现的位置
+                    });
+                    const data = Object.values(response)[0];
+
+                    const { threshold_1, threshold_2, threshold_3 } = data;
+
+                    let shapMeanList
+
+                    if (threshold === 'Low') {
+                        shapMeanList = threshold_1.shapMeanList;
+                    } else if (threshold === 'Medium') {
+                        shapMeanList = threshold_2.shapMeanList;
+                    } else if (threshold === 'High') {
+                        shapMeanList = threshold_3.shapMeanList;
+                    }
+
+                    if (shapMeanList) {
+                        let keys = Object.keys(shapMeanList);
+                        let values = Object.values(shapMeanList);
+                        // 假设 globalConfig.getG6Data() 返回一个对象，其中包含 nodes 数组
+                        const g6Data = globalConfig.getG6Data();
+                        const nodes = g6Data.nodes;
+                        // 找出与 keys 匹配的节点 ID 集合
+                        const matchingIds = nodes
+                            .filter(node => keys.includes(node.label))
+                            .map(node => node.id);
+                        // 现在 matchingIds 包含与 keys 匹配的节点 ID
+                        addEdges(item, matchingIds);
+                    }
+
+                    //通知提示
+                    notification.open({
+                        message: '特征贡献度 - ' + item.getModel().label,
+                        description: <ShowDescription threshold={threshold}
+                            threshold_1={threshold_1}
+                            threshold_2={threshold_2}
+                            threshold_3={threshold_3}
+                            nodeItem={item} />,
+                        placement: 'bottomLeft',
+                        duration: null,
+                        style: {
+                            width: '400px',
+                            // height: '450px'
+                        }
+                    });
+                })
+                .catch((error) => {
+                    console.error('An error occurred:', error);
+                    // 在这里处理错误
+                });
+        }
+
+        graph.off('node:mouseenter', mouseenter);
+        graph.on('node:mouseenter', mouseenter);
+
+        graph.off('node:mouseleave', mouseleave);
+        graph.on('node:mouseleave', mouseleave);
+
+        graph.off('node:contextmenu');
+        graph.on('node:contextmenu', nodeClick);
+
+        graph.off('canvas:click')
+        graph.on('canvas:click', resetEdges)
 
         graph.on('keydown', e => {
             const nodes = graph.getNodes();
             nodes.forEach(e => {
                 e.lock();
             })
+            graph.removeBehaviors('drag-combo', 'default');
         });
         graph.on('keyup', e => {
             const nodes = graph.getNodes();
             nodes.forEach(e => {
                 e.unlock();
             })
+            graph.addBehaviors('drag-combo', 'default');
         });
+
     },
     plugins: {
         toolbar: new G6.ToolBar({
-            position: {x: 500, y: 100}
+            position: { x: 500, y: 100 }
         }),
         tooltip: new G6.Tooltip({
-            // offsetX: 10,
-            // offsetY: 20,
             position: 'top',
             getContent(e) {
                 const outDiv = document.createElement('tooltip');
@@ -349,40 +420,51 @@ const GLOBAL_SETTING = {
                 setTimeout(function () {
                     outDiv.style.display = "none";
                 }, 2000);
+
                 outDiv.style.width = 'fit-content';
                 outDiv.style.height = 'fit-content';
-                const model = e.item.getModel();
+                try {
+                    const model = e.item.getModel();
+                    if (e.item.getType() === 'node') {
+                        let type = model.label === GLOBAL_SETTING.final_effect ? 'final effect'
+                            : GLOBAL_SETTING.key_effects.includes(model.label) ? 'key effects' : 'normal'
 
-                if (e.item.getType() === 'node') {
-                    let type = model.id === GLOBAL_SETTING.final_effect ? 'final effect'
-                        : GLOBAL_SETTING.key_effects.includes(model.id) ? 'key effects' : 'normal'
+                        let upstream = '';
+                        e.item.getNeighbors('source').forEach(e => {
+                            try {
+                                upstream += e ? e.getModel().label + ' ' : ' ';
+                            } catch (e) {
+                                console.log(e)
+                            }
+                        })
 
-                    let upstream = '';
-                    e.item.getNeighbors('source').forEach(e => {
-                        upstream += e.getModel().label + ' ';
-                    })
-
-                    let downstream = '';
-                    e.item.getNeighbors('target').forEach(e => {
-                        downstream += e.getModel().label + ' ';
-                    })
-                    outDiv.innerHTML = `<li><b>sub</b>: ${model.comboId}</li>
+                        let downstream = '';
+                        e.item.getNeighbors('target').forEach(e => {
+                            try {
+                                downstream += e ? e.getModel().label + ' ' : ' ';
+                            } catch (e) {
+                                console.log(e)
+                            }
+                        })
+                        outDiv.innerHTML = `<li><b>sub</b>: ${model.comboId}</li>
                                         <li><b>name</b>: ${model.label}</li>
+                                        <li><b>id</b>: ${model.id}</li>
                                         <li><b>type</b>: ${type}</li>
-                                        <li><b>upstream</b>: ${upstream}</li>
-                                        <li><b>downstream</b>: ${downstream}</li>
+                                        <li><b>upstream</b>:${upstream} </li>
+                                        <li><b>downstream</b>: ${downstream} </li>
                                                                             `;
-                } else {
-                    const source = e.item.getSource();
-                    const target = e.item.getTarget();
-                    outDiv.innerHTML = `<li><b>target</b>：${source.getModel().label} </li>
+                    } else {
+                        const source = e.item.getSource();
+                        const target = e.item.getTarget();
+                        outDiv.innerHTML = `<li><b>target</b>：${source.getModel().label} </li>
                                         <li><b>source</b>：${target.getModel().label} </li>
-                                        <li><b>ShapValue</b>：${(Math.random() + Math.round(Math.random() * 10)).toFixed(2)} </li>`;
+                                        `;
+                    }
+                } catch (e) {
+                    console.log(e)
                 }
                 return outDiv;
             },
-
-
             itemTypes: ['node', 'edge']
         }),
         menu: new G6.Menu({
@@ -400,9 +482,11 @@ const GLOBAL_SETTING = {
         }),
 
     },
-    final_effect: '10',
-    key_effects: ['2', '7', '9'],
+    final_effect: '',
+    key_effects: [],
 }
+
+
 const GLOBAL_STYLE = {
     ItemStyle: (graph) => {
         const fills = [
@@ -466,12 +550,13 @@ const GLOBAL_STYLE = {
             if (node.style) return {};
 
             let fill, stroke, type = 'circle';
-            let index = random;
+            // let index = random;
+            let index = 0;
             //不属于任何combo内的节点
             //如果是finalEffect
 
 
-            if (node.id === GLOBAL_SETTING.final_effect) {
+            if (node.label === GLOBAL_SETTING.final_effect) {
                 fill = '#f67a7a';
                 stroke = '#fa3f3f';
                 return {
@@ -498,11 +583,11 @@ const GLOBAL_STYLE = {
                 stroke = strokes[index % strokes.length];
 
                 //KEY_EFFECT
-                if (GLOBAL_SETTING.key_effects.includes(node.id)) {
+                if (GLOBAL_SETTING.key_effects.includes(node.label)) {
                     return {
                         type: 'background-animate',
                         color: stroke,
-                        size: 20,
+                        size: 25,
                         labelCfg: {
                             position: 'bottom'
                         },
@@ -579,259 +664,250 @@ const GLOBAL_STYLE = {
 
 }
 
+let PkGraph;
 
-export const PriorKnowledge = () => {
+
+export const PriorKnowledge = ({ data }) => {
+    // const data = data2;
     const ref = React.useRef(null);
-    let graph = null;
+    const [graph, setGraph] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [done, setDone] = useState(false);
+    const threshold = useContext(LayoutContext)
+    const [dragNodes, setDragNodes] = useState([]);
+    GLOBAL_SETTING.key_effects = globalConfig.getAllKeyEffect();
+    GLOBAL_SETTING.final_effect = globalConfig.getFinalEffect()[0];
+
+    //原始节点状态
+    const allKeyEffect = [...globalConfig.getAllKeyEffect()];
+    const allEffect = [...globalConfig.getAllEffect()];
+    const finalEffect = [...globalConfig.getFinalEffect()];
+
+
+
     React.useEffect(() => {
         if (!graph) {
-            //@ts-ignore
-            graph = new G6.Graph({
-                container: ref.current,
-                width: 1200,
-                height: 1000,
-                fitView: true,
-                fitViewPadding: 10,
-                animate: true,
-                modes: {
-                    default: [
-                        'drag-node', 'drag-canvas', 'zoom-canvas',
-                        'brush-select', 'drag-combo',
-                        'collapse-expand-combo',
-                        {
-                            type: 'create-edge',
-                            trigger: 'drag',
-                            key: 'shift',
-                            edgeConfig: {
-                                type: 'inside'
+            setGraph(() => {
+                return new G6.Graph({
+                    container: ref.current,
+                    width: 1200,
+                    height: 1500,
+                    fitView: true,
+                    fitViewPadding: 10,
+                    animate: true,
+                    modes: {
+                        default: [
+                            'drag-node', 'drag-canvas', 'zoom-canvas',
+                            'brush-select', 'drag-combo',
+                            'collapse-expand-combo',
+                            {
+                                type: 'create-edge',
+                                trigger: 'click',
+                                // key: 'control',
+                                edgeConfig: {
+                                    type: 'inside'
+                                },
                             },
-                        },
+                        ],
+                    },
+
+                    layout: {
+                        type: 'comboCombined',
+                        outerLayout: new G6.Layout['dagre']({
+                            rankdir: 'TB', // 布局的方向
+                            align: 'UL', // 可选
+                            nodesep: 20, // 节点间距
+                            ranksep: 30, // 层间距
+                            controlPoints: true, // 可选
+                        }),
+                        innerLayout: new G6.Layout['concentric']({
+                            preventOverlap: true, //防止重叠
+                            minNodeSpacing: 20
+                        }),
+
+                    },
+                    groupByTypes: false,
+                    enabledStack: true,
+                    plugins: [
+                        GLOBAL_SETTING.plugins.toolbar,
+                        GLOBAL_SETTING.plugins.tooltip,
+                        GLOBAL_SETTING.plugins.menu
                     ],
-                },
-
-                layout: {
-                    // type: 'dagre',
-                    // rankdir: 'TB', // 布局的方向
-                    // align: 'UL', // 可选
-                    // nodesep: 20, // 节点间距
-                    // ranksep: 30, // 层间距
-                    // controlPoints: true, // 是否保留布局连线的控制点
-                    type: 'comboCombined',
-                    outerLayout: new G6.Layout['dagre']({
-                        rankdir: 'TB', // 布局的方向
-                        align: 'UL', // 可选
-                        nodesep: 20, // 节点间距
-                        ranksep: 30, // 层间距
-                        controlPoints: true, // 可选
-                    }),
-                    innerLayout: new G6.Layout['concentric']({
-                        preventOverlap: true, //防止重叠
-                        minNodeSpacing: 20
-                    }),
-
-                },
-                groupByTypes: false,
-                enabledStack: true,
-                plugins: [
-                    GLOBAL_SETTING.plugins.toolbar,
-                    GLOBAL_SETTING.plugins.tooltip,
-                    GLOBAL_SETTING.plugins.menu
-                ],
-                nodeStateStyles: GLOBAL_STYLE.nodeStateStyles
-            });
-            GLOBAL_STYLE.ItemStyle(graph);
-            //@ts-ignore
-            graph.data(data);
-            graph.render();
-
-            GLOBAL_SETTING.BehaviorBind(graph);
+                    nodeStateStyles: GLOBAL_STYLE.nodeStateStyles
+                });
+            })
         }
-    }, []);
+    }, [graph]);
 
-    return <div ref={ref}/>;
+    React.useEffect(() => {
+        console.log(threshold);
+    }, [threshold])
+
+    React.useEffect(() => {
+        PkGraph = graph;
+    }, [graph])
+
+
+
+    if (graph !== null && !done) {
+
+        GLOBAL_STYLE.ItemStyle(graph);
+        //@ts-ignore
+        graph.data(data);
+        graph.render();
+        setDone(true);
+    }
+
+    //绑定监听事件
+    GLOBAL_SETTING.BehaviorBind(graph, threshold);
+
+    if (graph && done) {
+        graph.on('node:dragend', e => {
+            const combos = graph.save().combos
+            const nodes = graph.save().nodes
+            console.log('nodes', nodes);
+            let formData = {
+                list: [],
+                final_effect: []
+            };
+            combos.forEach(combo => {
+                let sub = parseInt(combo.id.replace("sub", ""));
+                let effect = [];
+                let key_effect = [];
+                combo.children.forEach(node => {
+                    let nodeLabel = graph.findById(node.id).getModel().label
+                    if (allKeyEffect.includes(nodeLabel)) {
+                        key_effect.push(nodeLabel);
+                    } else if (allEffect.includes(nodeLabel)) {
+                        effect.push(nodeLabel);
+                    }
+                });
+                formData.list.push({ sub, effect, key_effect });
+            });
+
+            // 从 nodes 中查找 final_effect
+            nodes.forEach(node => {
+                if (finalEffect.includes(node.label)) {
+                    formData.final_effect.push(node.label);
+                }
+            });
+            console.log('formDataformDataformData', formData);
+            // 调用全局类的setGlobalForm方法
+            globalConfig.setGlobalForm(formData);
+
+            console.log("FormData: ", formData);
+
+        })
+
+
+    }
+
+    //监听节点拖动
+
+
+    return (<div>
+        <div ref={ref} />
+    </div>);
 }
 
 
 export const CauseAndEffect = () => {
-    // const layout = {
-    //     type: 'dagre',
-    //     rankdir: 'TB', // 布局的方向
-    //     align: 'UL', // 可选
-    //     nodesep: 20, // 节点间距
-    //     ranksep: 30, // 层间距
-    //     controlPoints: true, // 可选
-    // };
-    // const minimap = new G6.Minimap();
-    const data = {
-        nodes: [
-            {
-                id: '0',
-                label: 'plcg',
-                comboId: 'sub0'
-            },
-            {
-                id: '1',
-                label: 'PIP3',
-                comboId: 'sub0'
-            },
-            {
-                id: '2',
-                label: 'PIP2',
-                comboId: 'sub0'
-            },
-            {
-                id: '3',
-                label: 'PKC',
-                comboId: 'sub1'
-            },
-            {
-                id: '4',
-                label: 'PKA',
-                comboId: 'sub1'
-            },
-            {
-                id: '5',
-                label: 'praf',
-                comboId: 'sub2'
-            },
-            {
-                id: '6',
-                label: 'pjnk',
-                comboId: 'sub1'
-            },
-            {
-                id: '7',
-                label: 'p38',
-                comboId: 'sub1'
-            },
-            {
-                id: '8',
-                label: 'pmek',
-                comboId: 'sub2'
-            },
-            {
-                id: '9',
-                label: 'p44/42',
-                comboId: 'sub2'
-            },
-            {
-                id: '10',
-                label: 'pakts473',
-                finalEffect: 'true'
-            },
-        ],
-        edges: [
-            {
-                source: '0',
-                target: '1',
-            },
-            {
-                source: '0',
-                target: '2',
-            },
-            {
-                source: '0',
-                target: '3',
-            },
-            {
-                source: '1',
-                target: '2',
-            },
-            {
-                source: '1',
-                target: '10',
-            },
-            {
-                source: '2',
-                target: '3',
-            },
-            {
-                source: '3',
-                target: '4',
-            },
-            {
-                source: '3',
-                target: '5',
-            },
-            {
-                source: '3',
-                target: '6',
-            },
-            {
-                source: '3',
-                target: '7',
-            },
-            {
-                source: '3',
-                target: '8',
-            },
-            {
-                source: '4',
-                target: '5',
-            },
-            {
-                source: '4',
-                target: '6',
-            },
-            {
-                source: '4',
-                target: '7',
-            },
-            {
-                source: '4',
-                target: '8',
-            },
-            {
-                source: '4',
-                target: '9',
-            },
-            {
-                source: '4',
-                target: '10',
-            },
-            {
-                source: '5',
-                target: '8',
-            },
-            {
-                source: '8',
-                target: '9',
-            },
-            {
-                source: '9',
-                target: '10',
-            },
-        ],
-    };
 
-    for (let i = 0; i < Math.round(Math.random() * data.edges.length) / 2; i++) {
-        data.edges[Math.round(Math.random() * data.edges.length)].source = "";
-        data.edges[Math.round(Math.random() * data.edges.length)].target = "";
+    const [newG6Data, setNewG6Data] = useState(null);
+    if (PkGraph && !newG6Data) {
+        try {
+            const edges = PkGraph.getEdges();
+            const nodes = PkGraph.getNodes();
+            const combos = PkGraph.getCombos();
+            console.log('edgesedges', edges);
+            console.log('nodesnodes', nodes);
+            console.log('combos', combos);
+            // 获取节点和 combo 的数量
+            const nodeCount = nodes.length;
+            const comboCount = combos.length;
+
+            // 初始化邻接矩阵
+            const adjMatrix = Array.from({ length: nodeCount }, () => Array(nodeCount).fill(0));
+            const subAdjMatrix = Array.from({ length: (comboCount + 1) }, () => Array(comboCount + 1).fill(0));
+
+            // 确定最大节点 ID 为 nodeCount - 1
+            const maxNodeId = nodeCount - 1;
+
+            // 获取所有的 key effect 节点
+            const keyEffectNodes = nodes.filter(node => {
+                return globalConfig.getAllKeyEffect().includes(node.getModel().label);
+            }).map(node => parseInt(node.getModel().id, 10));  // 将 key effect 节点的 ID 转换为整数
+
+            // 填充邻接矩阵
+            edges.forEach(edge => {
+                const sourceId = edge.getModel().source;
+                const targetId = edge.getModel().target;
+                // 判断边的起点和终点是否是 sub 节点
+                const isSourceSub = sourceId.startsWith("sub");
+                const isTargetSub = targetId.startsWith("sub");
+                if (isSourceSub || isTargetSub) {
+                    // 如果边的起点或终点是 sub 节点，则更新 subAdjMatrix
+                    const sourceIndex = parseInt(sourceId[3], 10);
+                    const targetIndex = isTargetSub ? parseInt(targetId[3], 10) : comboCount;
+                    if (!isNaN(sourceIndex) && !isNaN(targetIndex)) {
+                        subAdjMatrix[sourceIndex][targetIndex] = 1;
+                    }
+                }
+                else {
+                    // 如果边的起点和终点都不是 sub 节点，则更新 adjMatrix
+                    const source = parseInt(sourceId, 10);
+                    const target = parseInt(targetId, 10);
+
+                    if (!isNaN(source) && !isNaN(target)) {
+                        adjMatrix[source][target] = 1;
+                    }
+                }
+            })
+
+
+            // 将所有 key effect 节点与最终节点连接
+            keyEffectNodes.forEach(source => {
+                if (!isNaN(source)) {
+                    adjMatrix[source][maxNodeId] = 1;
+                }
+            });
+
+            sendAdjMatrix(adjMatrix, subAdjMatrix)
+                .then((response) => {
+                    const oldG6Data = globalConfig.getG6Data();
+                    const { nodes } = oldG6Data;
+
+                    // 初始化新的 edges 数组
+                    const newEdges = [];
+
+                    // 遍历二维数组来填充 newEdges
+                    for (let i = 0; i < response.length; i++) {
+                        for (let j = 0; j < response[i].length; j++) {
+                            if (response[i][j] === 1) {
+                                newEdges.push({
+                                    source: nodes[i].id,
+                                    target: nodes[j].id
+                                });
+                            }
+                        }
+                    }
+
+                    // 构造新的 G6Data
+                    const data = {
+                        nodes: nodes,
+                        edges: newEdges
+                    };
+                    setNewG6Data(data)
+                }).catch(e => console.log(e))
+        } catch (e) {
+            console.log(e)
+        }
+
     }
-
-
     const ref = React.useRef(null);
     let graph = null;
     React.useEffect(() => {
-        if (!graph) {
-            const tooltip = new G6.Tooltip({
-                offsetX: 10,
-                offsetY: 20,
-                getContent(e) {
-                    const outDiv = document.createElement('div');
-                    outDiv.style.width = '180px';
-                    outDiv.innerHTML = `
-                            <p style="text-align: center">node info</p>
-                            <div>
-                                <li>name: ${e.item.getModel().label}</li>
-                                <li>source: </li>
-                                <li>target: </li>
-                            </div>`
-                    return outDiv
-                },
-                itemTypes: ['node']
-            });
-            //@ts-ignore
+        if (!graph && newG6Data) {
             graph = new G6.Graph({
                 container: ref.current,
                 width: 600,
@@ -848,24 +924,24 @@ export const CauseAndEffect = () => {
                 },
 
                 layout: {
-                    // type: 'dagre',
-                    // rankdir: 'TB', // 布局的方向
-                    // align: 'UL', // 可选
-                    // nodesep: 20, // 节点间距
-                    // ranksep: 30, // 层间距
+                    type: 'dagre',
+                    rankdir: 'LR', // 布局的方向
+                    align: 'UL', // 可选
+                    nodesep: 10, // 节点间距
+                    ranksep: 20, // 层间距
                     // controlPoints: true, // 是否保留布局连线的控制点
-                    type: 'comboCombined',
-                    outerLayout: new G6.Layout['dagre']({
-                        rankdir: 'TB', // 布局的方向
-                        align: 'UL', // 可选
-                        nodesep: 10, // 节点间距
-                        ranksep: 15, // 层间距
-                        controlPoints: true, // 可选
-                    }),
-                    innerLayout: new G6.Layout['concentric']({
-                        preventOverlap: true, //防止重叠
-                        minNodeSpacing: 20
-                    }),
+                    // type: 'comboCombined',
+                    // outerLayout: new G6.Layout['dagre']({
+                    //     rankdir: 'TB', // 布局的方向
+                    //     align: 'UL', // 可选
+                    //     nodesep: 10, // 节点间距
+                    //     ranksep: 15, // 层间距
+                    //     controlPoints: true, // 可选
+                    // }),
+                    // innerLayout: new G6.Layout['concentric']({
+                    //     preventOverlap: true, //防止重叠
+                    //     minNodeSpacing: 20
+                    // }),
 
                 },
                 groupByTypes: false,
@@ -877,15 +953,11 @@ export const CauseAndEffect = () => {
                 nodeStateStyles: GLOBAL_STYLE.nodeStateStyles
             });
             GLOBAL_STYLE.ItemStyle(graph);
-            //@ts-ignore
-            graph.data(data);
+            graph.data(newG6Data);
             graph.render();
-            GLOBAL_SETTING.BehaviorBind(graph);
-
-
         }
-    }, []);
+    }, [newG6Data]);
 
-    return <div ref={ref}/>;
+    return <div ref={ref} />;
 }
 

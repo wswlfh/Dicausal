@@ -1,0 +1,93 @@
+{
+    "PKC": {
+      "threshold_1": {
+        "shapMeanList": {
+          "PIP2": 130.87,
+          "PIP3": 37.75
+        },
+        "shap_1": "base64xxx",
+        "shap_2": "base64xxx",
+        "shap_3": "base64xxx"
+      },
+      "threshold_2": {
+        "shapMeanList": {
+          "PIP2": 130.87
+        },
+        "shap_1": "base64xxx",
+        "shap_2": "base64xxx",
+        "shap_3": "base64xxx"
+      },
+      "threshold_3": {
+        "shapMeanList": {},
+        "shap_1": "base64xxx",
+        "shap_2": "base64xxx",
+        "shap_3": "base64xxx"
+      }
+    },
+    "p4442": {
+      "threshold_1": {
+        "shapMeanList": {
+          "PKA": 29.8,
+          "pjnk": 47.93,
+          "pmek": 42.76
+        },
+        "shap_1": "base64xxx",
+        "shap_2": "base64xxx",
+        "shap_3": "base64xxx"
+      },
+      "threshold_2": {
+        "shapMeanList": {
+          "pjnk": 47.93,
+          "pmek": 42.76
+        },
+        "shap_1": "base64xxx",
+        "shap_2": "base64xxx",
+        "shap_3": "base64xxx"
+      },
+      "threshold_3": {
+        "shapMeanList": {
+          "pjnk": 47.93
+        },
+        "shap_1": "base64xxx",
+        "shap_2": "base64xxx",
+        "shap_3": "base64xxx"
+      }
+    },
+    "pakts473": {
+      "threshold_1": {
+        "shapMeanList": {
+          "PIP2": 6.17,
+          "PIP3": 11.2,
+          "PKA": 11.75,
+          "PKC": 3.05,
+          "p4442": 17.13,
+          "pjnk": 21.98,
+          "pmek": 11.35
+        },
+        "shap_1": "base64xxx",
+        "shap_2": "base64xxx",
+        "shap_3": "base64xxx"
+      },
+      "threshold_2": {
+        "shapMeanList": {
+          "PKA": 11.75,
+          "p4442": 17.13,
+          "pjnk": 21.98,
+          "pmek": 11.35
+        },
+        "shap_1": "base64xxx",
+        "shap_2": "base64xxx",
+        "shap_3": "base64xxx"
+      },
+      "threshold_3": {
+        "shapMeanList": {
+          "p4442": 17.13,
+          "pjnk": 21.98
+        },
+        "shap_1": "base64xxx",
+        "shap_2": "base64xxx",
+        "shap_3": "base64xxx"
+      }
+    }
+  }
+  

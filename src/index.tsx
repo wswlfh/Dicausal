@@ -1,8 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-//import App from './App';
-import {AnimationDemo} from "./AnimationDemo";
-import App from './component/Layout';
+import App from './Component/Layout';
 
 
 ReactDOM.createRoot(
