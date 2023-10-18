@@ -1,3 +1,5 @@
+import pathlib
+
 from flask import Flask, request, jsonify
 import matplotlib
 import matplotlib.pyplot as plt
@@ -13,6 +15,7 @@ from io import BytesIO
 import random
 from sklearn.ensemble import RandomForestRegressor
 
+font_path = pathlib.Path("simhei.ttf")
 matplotlib.use('agg')
 app = Flask(__name__)
 # CORS(app, resources={r"/*": {"origins": "*"}})  # 初始化 CORS
@@ -64,7 +67,8 @@ def upload_file():
         for index, record in enumerate(dataSource):
             record['key'] = str(index)
 
-        return json.dumps({"columns": columns, "dataSource": dataSource}, ensure_ascii=False), 200, {'Content-Type': 'application/json;charset=utf-8'}
+        return json.dumps({"columns": columns, "dataSource": dataSource}, ensure_ascii=False), 200, {
+            'Content-Type': 'application/json;charset=utf-8'}
     else:
         return jsonify({"error": "No file uploaded"}),
 
@@ -78,7 +82,7 @@ def analyze_group(key_effects, other_effects, target_feature, model):
     shap_values = explainer(X)
 
     avg_shap_values = np.abs(shap_values.values).mean(axis=0)[
-        len(key_effects):]
+                      len(key_effects):]
     effect_shap_pairs = sorted(
         zip(other_effects, avg_shap_values), key=lambda x: x[1], reverse=True)
 
@@ -102,9 +106,10 @@ def analyze_group(key_effects, other_effects, target_feature, model):
         # Generate the summary plot for the current threshold
         selected_effect_names = [f[0] for f in selected_effects]
         filtered_shap_values = shap_values[:, [
-            X.columns.get_loc(f) for f in selected_effect_names]]
+                                                  X.columns.get_loc(f) for f in selected_effect_names]]
 
         buffer1 = BytesIO()
+        plt.yticks(fontproperties=font_path)
         shap.summary_plot(filtered_shap_values.values,
                           X[selected_effect_names], plot_type="bar", show=False)
         plt.savefig(buffer1, format="png")
@@ -115,6 +120,7 @@ def analyze_group(key_effects, other_effects, target_feature, model):
         shap_values_for_pie = list(selected_effects_dict.values())
         shap_labels_for_pie = list(selected_effects_dict.keys())
         buffer2 = BytesIO()
+        plt.yticks(fontproperties=font_path)
         shap.summary_plot(filtered_shap_values.values,
                           X[selected_effect_names], show=False)
         plt.savefig(buffer2, format="png")
@@ -124,6 +130,7 @@ def analyze_group(key_effects, other_effects, target_feature, model):
         # Create the BytesIO object for pie chart
         buffer_pie = BytesIO()
         plt.figure()
+        plt.yticks(fontproperties=font_path)
         plt.pie(shap_values_for_pie,
                 labels=shap_labels_for_pie, autopct='%1.1f%%')
         plt.title(
@@ -216,22 +223,23 @@ def modify_adj_matrix(adj_matrix, num_new_edges):
     # 获取矩阵的维度
     rows, cols = len(adj_matrix), len(adj_matrix[0])
 
-    added_edges = 0
-    while added_edges < num_new_edges:
-        row = random.randint(0, rows - 2)  # -2是因为要保持最后一行为全0
-        col = random.randint(0, cols - 1)
-
-        # 确保不添加自环
-        if row == col:
-            continue
-
-        # 确保不添加已经存在的边
-        if adj_matrix[row][col] == 1:
-            continue
-
-        # 在邻接矩阵中将该单元格设置为1（表示有边）
-        adj_matrix[row][col] = 1
-        added_edges += 1
+    # added_edges = 0
+    # while added_edges < num_new_edges:
+    #     row = random.randint(0, rows - 2)  # -2是因为要保持最后一行为全0
+    #     col = random.randint(0, cols - 1)
+    #
+    #     # 确保不添加自环
+    #     if row == col:
+    #         continue
+    #
+    #     # 确保不添加已经存在的边
+    #     if adj_matrix[row][col] == 1:
+    #         continue
+    #
+    #     # 在邻接矩阵中将该单元格设置为1（表示有边）
+    for i in range(num_new_edges):
+        adj_matrix[i][i + 1] = 1
+    #    added_edges += 1
 
     return adj_matrix
 
@@ -247,16 +255,17 @@ def gen_causal_diagrams():
 
         # 子系统邻接矩阵
         sub_adj_matrix = json_data.get('subAdjMatrix', [])
+        nodes = json_data.get('nodes', [])
 
+        print(nodes)
         print("接收到的节点邻接矩阵:", adj_matrix)
         print("接收到的子系统邻接矩阵:", sub_adj_matrix)
         # 从请求中获取需要添加的新边的数量，如果没有则默认为5
-        num_new_edges = 10
+        num_new_edges = 5
 
         # 修改邻接矩阵
         modified_adj_matrix = modify_adj_matrix(adj_matrix, num_new_edges)
 
-        
         print("修改后的节点邻接矩阵:", modified_adj_matrix)
 
         return jsonify(modified_adj_matrix), 200
@@ -267,4 +276,4 @@ def gen_causal_diagrams():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port=7160, debug=True)

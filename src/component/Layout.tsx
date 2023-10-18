@@ -14,7 +14,7 @@ import globalConfig from './GlobalConfig';  // 假设这是一个从 globalState
 const { Header, Content, Footer, Sider } = Layout;
 const { Panel } = Collapse;
 export const LayoutContext = React.createContext(null)
-const App: React
+const Interface: React
     .FC = () => {
         const [, setCollapsedL] = useState(false);
         const [, setCollapsedR] = useState(false);
@@ -203,7 +203,7 @@ const App: React
                             }, 3000);
                         }} loading={loadings[0]}>
                             {/*PC Algorithm*/}
-                            PC算法
+                            因果发现
                         </Button>
                     </div>
 
@@ -217,4 +217,4 @@ const App: React
         );
     };
 
-export default App;
+export default Interface;

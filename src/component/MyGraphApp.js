@@ -871,12 +871,10 @@ export const CauseAndEffect = () => {
                     adjMatrix[source][maxNodeId] = 1;
                 }
             });
-
-            sendAdjMatrix(adjMatrix, subAdjMatrix)
+            const oldG6Data = globalConfig.getG6Data();
+            const nodesG6 = oldG6Data.nodes;
+            sendAdjMatrix(adjMatrix, subAdjMatrix, nodesG6)
                 .then((response) => {
-                    const oldG6Data = globalConfig.getG6Data();
-                    const { nodes } = oldG6Data;
-
                     // 初始化新的 edges 数组
                     const newEdges = [];
 
@@ -885,8 +883,8 @@ export const CauseAndEffect = () => {
                         for (let j = 0; j < response[i].length; j++) {
                             if (response[i][j] === 1) {
                                 newEdges.push({
-                                    source: nodes[i].id,
-                                    target: nodes[j].id
+                                    source: nodesG6[i].id,
+                                    target: nodesG6[j].id
                                 });
                             }
                         }
@@ -894,7 +892,7 @@ export const CauseAndEffect = () => {
 
                     // 构造新的 G6Data
                     const data = {
-                        nodes: nodes,
+                        nodes: nodesG6,
                         edges: newEdges
                     };
                     setNewG6Data(data)
