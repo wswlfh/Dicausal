@@ -40,6 +40,7 @@ interface G6Node {
   id: string;
   label: string;
   comboId?: string;
+  type?:string;
 }
 
 interface G6Edge {
@@ -146,17 +147,17 @@ class GlobalConfig {
       combos.push({ id: comboId, label: comboId });
 
       effect.forEach((effectName) => {
-        nodes.push({ id: String(nodeIdCounter++), label: effectName, comboId: comboId });
+        nodes.push({ id: String(nodeIdCounter++), label: effectName, comboId: comboId, type:'effect' });
       });
 
       key_effect.forEach((keyEffectName) => {
-        nodes.push({ id: String(nodeIdCounter++), label: keyEffectName, comboId: comboId });
+        nodes.push({ id: String(nodeIdCounter++), label: keyEffectName, comboId: comboId, type:'key' });
       });
     });
 
     // 生成最终效应节点
     this.globalForm.final_effect.forEach((finalEffectName) => {
-      nodes.push({ id: String(nodeIdCounter), label: finalEffectName });
+      nodes.push({ id: String(nodeIdCounter), label: finalEffectName ,type:'final' });
     });
 
     // 生成 edges
@@ -191,7 +192,7 @@ class GlobalConfig {
 
   //监听自定义事件，当数据更新的时候触发
   addListener(fn: Function) {
-    // console.log('Add Listener', fn);
+    console.log('Add Listener', fn);
 
     this.listeners.push(fn);
   }
@@ -205,7 +206,7 @@ class GlobalConfig {
 
   notifyListeners() {
     this.listeners.forEach(fn => {
-      // console.log('Execute Listener', fn);
+      console.log('Execute Listener', fn);
       fn()
     });
   }
