@@ -2,12 +2,10 @@ import React, { useContext, useRef, useState } from 'react';
 import ReactDOM from "react-dom/client";
 import { Col, Row, Layout, Drawer, notification, Skeleton, Radio, Image, Modal, Spin } from 'antd';
 import '../index.css';
-import Graphin, { Utils, Behaviors, GraphinContext, Components, NodeConfig } from '@antv/graphin';
 import G6 from '@antv/g6';
 import { LayoutContext } from "./Layout";
 import globalConfig from './GlobalConfig';
 import { sendFormData, sendAdjMatrix } from './utils/api';
-const { ZoomCanvas } = Behaviors;
 
 
 G6.registerNode(
@@ -305,13 +303,48 @@ const GLOBAL_SETTING = {
                 console.log(e);
             }
 
-            let addKey = []
-            if (GLOBAL_SETTING.key_effects.includes(item.getModel().label)) {
+            let addKeySet = new Set();  // 使用 Set 来避免重复
+
+            // 获取所有数据
+            const g6Data = globalConfig.getG6Data();
+            const nodes = g6Data.nodes;
+            const keyEffects = globalConfig.getAllKeyEffect();
+            const nodeLabel = item.getModel().label;
+
+            // 找到当前节点对应的 comboId
+            const currentNode = nodes.find(node => node.label === nodeLabel);
+            const currentSub = currentNode?.comboId;
+
+            if (GLOBAL_SETTING.key_effects.includes(nodeLabel)) {
                 const neighbors = item.getNeighbors('source');  // 获取所有源（即入边）邻居节点
-                addKey = neighbors.map(neighbor => neighbor.getModel().label);  // 获取邻居节点的 ID
+                neighbors.forEach(neighbor => addKeySet.add(neighbor.getModel().label));  // 添加到 Set
+
+                if (currentSub) {
+                    // 提取出 sub 后面的数字
+                    const currentSubIndex = parseInt(currentSub.replace('sub', ''), 10);
+                    if (isNaN(currentSubIndex)) {
+                        console.error("comboId 格式不正确:", currentSub);
+                        return;
+                    }
+
+                    // 遍历所有上游的 sub
+                    for (let i = 0; i < currentSubIndex; i++) {
+                        const subName = `sub${i}`;
+                        const nodesInSub = nodes.filter(node => node.comboId === subName);
+
+                        // 提取 sub 中的所有 keyEffect 并添加到 Set
+                        nodesInSub
+                            .filter(node => keyEffects.includes(node.label))
+                            .forEach(node => addKeySet.add(node.label));
+                    }
+                }
             } else {
-                addKey = GLOBAL_SETTING.key_effects
+                //final
+                GLOBAL_SETTING.key_effects.forEach(key => addKeySet.add(key));
             }
+
+            const addKey = [...addKeySet];
+
             console.log('addKeyaddKeyaddKey', addKey);
 
             notification.open({
@@ -762,43 +795,59 @@ export const PriorKnowledge = ({ data }) => {
     GLOBAL_SETTING.BehaviorBind(graph, threshold);
 
     if (graph && done) {
-        graph.on('node:dragend', e => {
-            const combos = graph.save().combos
-            const nodes = graph.save().nodes
+        graph.on('dragend', e => {
+            const nodes = graph.getNodes().map(node => node.getModel());
+
             console.log('nodes', nodes);
-            let formData = {
-                list: [],
-                final_effect: []
-            };
-            combos.forEach(combo => {
-                let sub = parseInt(combo.id.replace("sub", ""));
-                let effect = [];
-                let key_effect = [];
-                combo.children.forEach(node => {
-                    let nodeLabel = graph.findById(node.id).getModel().label
-                    if (allKeyEffect.includes(nodeLabel)) {
-                        key_effect.push(nodeLabel);
-                    } else if (allEffect.includes(nodeLabel)) {
-                        effect.push(nodeLabel);
+            console.log('graph', graph);
+
+            if (e && e.item && e.item.getType() === 'node') {
+                let formData = {
+                    list: [],
+                    final_effect: []
+                };
+
+                // 1. 基于 comboId 对 nodes 进行分组
+                let groupedByComboId = {};
+                nodes.forEach(node => {
+                    if (node.comboId) {
+                        if (!groupedByComboId[node.comboId]) {
+                            groupedByComboId[node.comboId] = [];
+                        }
+                        groupedByComboId[node.comboId].push(node);
                     }
                 });
-                formData.list.push({ sub, effect, key_effect });
-            });
 
-            // 从 nodes 中查找 final_effect
-            nodes.forEach(node => {
-                if (finalEffect.includes(node.label)) {
-                    formData.final_effect.push(node.label);
-                }
-            });
-            console.log('formDataformDataformData', formData);
-            // 调用全局类的setGlobalForm方法
-            globalConfig.setGlobalForm(formData);
+                // 2. 遍历每个组
+                Object.keys(groupedByComboId).forEach(comboId => {
+                    let sub = parseInt(comboId.replace("sub", ""));
+                    let effect = [];
+                    let key_effect = [];
 
-            console.log("FormData: ", formData);
+                    groupedByComboId[comboId].forEach(node => {
+                        if (allKeyEffect.includes(node.label)) {
+                            key_effect.push(node.label);
+                        } else if (allEffect.includes(node.label)) {
+                            effect.push(node.label);
+                        }
+                    });
 
-        })
+                    formData.list.push({ sub, effect, key_effect });
+                });
 
+                // 3. 从 nodes 中查找 final_effect
+                nodes.forEach(node => {
+                    if (finalEffect.includes(node.label)) {
+                        formData.final_effect.push(node.label);
+                    }
+                });
+
+                console.log('formData', formData);
+                // 调用全局类的setGlobalForm方法
+                globalConfig.setGlobalForm(formData);
+                console.log("FormData: ", formData);
+            }
+        });
 
     }
 
