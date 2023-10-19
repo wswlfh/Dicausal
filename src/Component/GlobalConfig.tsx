@@ -191,7 +191,7 @@ class GlobalConfig {
 
   //监听自定义事件，当数据更新的时候触发
   addListener(fn: Function) {
-    console.log('Add Listener', fn);
+    // console.log('Add Listener', fn);
 
     this.listeners.push(fn);
   }
@@ -205,7 +205,7 @@ class GlobalConfig {
 
   notifyListeners() {
     this.listeners.forEach(fn => {
-      console.log('Execute Listener', fn);
+      // console.log('Execute Listener', fn);
       fn()
     });
   }
