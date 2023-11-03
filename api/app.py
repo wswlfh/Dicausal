@@ -132,14 +132,14 @@ def analyze_group(key_effects, other_effects, target_feature, model):
 
         # Create the BytesIO object for pie chart
         buffer_pie = BytesIO()
-        plt.figure()
-        plt.yticks(fontproperties=font_path)
-        plt.pie(shap_values_for_pie,
-                labels=shap_labels_for_pie, autopct='%1.1f%%')
-        plt.title(
-            f'{key_effects[0]}: SHAP Value Distribution for threshold {threshold}')
-        plt.savefig(buffer_pie, format="png")
-        plt.close()
+        # plt.figure()
+        # plt.yticks(fontproperties=font_path)
+        # plt.pie(shap_values_for_pie,
+        #         labels=shap_labels_for_pie, autopct='%1.1f%%')
+        # plt.title(
+        #     f'{key_effects[0]}: SHAP Value Distribution for threshold {threshold}')
+        # plt.savefig(buffer_pie, format="png")
+        # plt.close()
         shap_3 = base64.b64encode(buffer_pie.getvalue()).decode()
 
         thresholds_results[f'threshold_{threshold}'] = {
@@ -263,7 +263,7 @@ def get_dataset(nodes):
     return X
 
 
-def get_priori_knowledge(nodes, sub_adj_matrix):
+def get_priori_knowledge(adj_matrix, nodes, sub_adj_matrix):
     # 初始化可达矩阵
     reach_matrix = get_reachable_matrix(sub_adj_matrix, len(sub_adj_matrix))
     # 初始化subsystems
@@ -272,6 +272,13 @@ def get_priori_knowledge(nodes, sub_adj_matrix):
     pk = PrioriKnowledge(len(nodes))
 
     # 构造先验知识
+    # 加入required edges
+    for i in range(len(nodes)):
+        for j in range(len(nodes)):
+            if adj_matrix[i][j] == 1:
+                pk.add_required_edge(i, j)
+                pk.add_forbidden_edge(j, i)
+
     # 组内：key不能指向同组的effect
     for i in range(len(subsystems)):
         item = subsystems[i]
@@ -321,7 +328,7 @@ def modify_adj_matrix(adj_matrix, sub_adj_matrix, nodes):
 
     # 切片待计算的数据集
     X = get_dataset(nodes)
-    pk = get_priori_knowledge(nodes, sub_adj_matrix)
+    pk = get_priori_knowledge(adj_matrix, nodes, sub_adj_matrix)
     adj_matrix = get_causal_matrix(X, pk)
 
     return adj_matrix

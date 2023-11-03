@@ -49,6 +49,7 @@ const App: React.FC = () => {
         globalConfig.addListener(updateForm);
         // 在组件卸载时移除监听器
         return () => {
+            // 假设你在 GlobalConfig 类中添加了 removeListener 方法
             globalConfig.removeListener(updateForm);
         };
     }, [form]);
