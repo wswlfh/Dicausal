@@ -240,12 +240,9 @@ const GLOBAL_SETTING = {
                             style={{ objectFit: 'contain' }}
                             src={`data:image/png;base64,${shap_2}`} />
 
-                        {/* <Image height={200} width={350}
-                            style={{ objectFit: 'contain' }}
-                            src={`data:image/png;base64,${shap_3}`} /> */}
-                        <Image height={200} width={350}
-                            style={{ objectFit: 'contain' }}
-                            src={`data:image/png;base64,${shap_3}`} />
+                        {/*<Image height={200} width={350}*/}
+                        {/*    style={{ objectFit: 'contain' }}*/}
+                        {/*    src={`data:image/png;base64,${shap_3}`} />*/}
                     </Image.PreviewGroup>
                 );
             };
@@ -917,7 +914,8 @@ export const CauseAndEffect = () => {
             // 将所有 key effect 节点与最终节点连接
             keyEffectNodes.forEach(source => {
                 if (!isNaN(source)) {
-                    adjMatrix[source][maxNodeId] = 1;
+                    //adjMatrix[source][maxNodeId] = 1;
+                    const a = 1;
                 }
             });
 
