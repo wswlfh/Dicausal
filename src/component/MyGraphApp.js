@@ -358,11 +358,7 @@ const GLOBAL_SETTING = {
                 .then((response) => {
                     console.log('Response data:', response);
                     //关闭等待弹窗，重新设置延时
-                    notification.open({
-                        duration: 0.1,  // 0 表示不会自动关闭
-                        key: 'loadingNotification',
-                        placement: 'topRight', // 设置弹窗出现的位置
-                    });
+
                     const data = Object.values(response)[0];
 
                     const { threshold_1, threshold_2, threshold_3 } = data;

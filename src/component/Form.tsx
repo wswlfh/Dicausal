@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { MinusCircleOutlined, QuestionCircleOutlined, UploadOutlined, ExportOutlined } from "@ant-design/icons";
-import { Button, Form, Select, Space, Tooltip, Upload } from "antd";
+import { Button, Form, Select, Space, Tooltip, Upload, Checkbox, Divider, Row, Col, Spin, notification, Image, Card } from "antd";
 import globalConfig from './GlobalConfig';
-import { sendFormData } from './utils/api'
+import { sendFormData } from './utils/api';
 
-const annotation = {
-    subGraph: '利用专家应用领域知识对参数进行划分和分组，形成子系统 ',
-    keyEffects: '关键指标表示子系统的终点。它们可能受到同一组变量及其上游组的关键影响。',
-    threshold: '阈值级别的高低影响因果发现的效果',
-    finalEffect: '最终指标是所有子系统的终点'
-}
+import type { CheckboxChangeEvent } from 'antd/es/checkbox';
+import type { CheckboxValueType } from 'antd/es/checkbox/Group';
+
+const CheckboxGroup = Checkbox.Group;
+// const filteredOptions = ['Apple', 'Pear', 'Orange'];
+
+
+
+
 
 interface FormData {
     list: Array<{ sub: number, effect: string[], key_effect: string[] }>;
@@ -21,8 +24,25 @@ const App: React.FC = () => {
     const [form] = Form.useForm();
 
     const [selectedItems, setSelectedItems] = useState<string[]>([]);
+    const [shapData, setShapData] = useState(null);
     const [filteredOptions, setFilteredOptions] = useState<string[]>([]);
     const [hasSetFilteredOptions, setHasSetFilteredOptions] = useState(false);
+
+
+    const [checkedList, setCheckedList] = useState<CheckboxValueType[]>([]);
+
+    const checkAll = filteredOptions.length === checkedList.length;
+    const indeterminate = checkedList.length > 0 && checkedList.length < filteredOptions.length;
+
+    const onChange = (list: CheckboxValueType[]) => {
+        setCheckedList(list);
+    };
+
+    const onCheckAllChange = (e: CheckboxChangeEvent) => {
+        setCheckedList(e.target.checked ? filteredOptions : []);
+    };
+
+
 
     React.useEffect(() => {
         const updateFilteredOptions = () => {
@@ -55,177 +75,123 @@ const App: React.FC = () => {
 
 
 
+    const getImages = (thresholdData: any) => {
+        const { threshold_1, threshold_2, threshold_3 } = thresholdData;
+        const { shap_1, shap_2, shap_3 } = threshold_1;
+        return (
+            <Image.PreviewGroup>
+                <Image height={250} width={700}
+                    style={{ objectFit: 'contain' }}
+                    src={`data:image/png;base64,${shap_1}`} />
+
+                <Image height={250} width={700}
+                    style={{ objectFit: 'contain' }}
+                    src={`data:image/png;base64,${shap_2}`} />
+
+            </Image.PreviewGroup>
+        );
+    };
+
     const onFinish = async (values: FormData) => {
-        console.log("Received values of form:", values);
-        globalConfig.setGlobalForm(values);
-        globalConfig.setIsDraw(true)
-    };
-
-    const exportToJsonFile = () => {
-        const values = form.getFieldsValue();
-        const modifiedList = values.list.map((item: any, index: any) => {
-            return { sub: index, ...item };
+        if (!values || !values.final_effect) return
+        values.list = [{ sub: 0, effect: [], key_effect: [] }]
+        console.log(values);
+        notification.open({
+            message: '正在加载...',
+            description: <Spin size="large" />,
+            duration: 0,  // 0 表示不会自动关闭
+            key: 'loadingNotification',
+            placement: 'topRight', // 设置弹窗出现的位置
         });
-        const modifiedValues = { ...values, list: modifiedList };
-        const jsonString = JSON.stringify(modifiedValues, null, 2);
-        const blob = new Blob([jsonString], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "config.json";
-        a.click();
-        URL.revokeObjectURL(url);
+        sendFormData(values, values.final_effect[0], checkedList)
+            .then((response) => {
+                notification.open({
+                    message: '',
+                    duration: 0.1,  // 0 表示不会自动关闭
+                    key: 'loadingNotification',
+                    placement: 'topRight', // 设置弹窗出现的位置
+                });
+                const data = Object.values(response)[0];
+                //@ts-ignore
+                setShapData(data)
+            })
+
     };
-
-
-    const beforeUpload = (file: File) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const jsonString = e.target?.result?.toString();
-            if (jsonString) {
-                const values = JSON.parse(jsonString);
-                form.setFieldsValue(values);
-            }
-        };
-        reader.readAsText(file);
-        return false;
-    };
-
-
 
 
     return (
-        <Form
-            form={form}
-            wrapperCol={{ span: 24 }}
-            autoComplete="off"
-            onFinish={onFinish}
-        >
-            <Space style={{ marginBottom: "15px" }}>
-                <Upload showUploadList={false} beforeUpload={beforeUpload}>
-                    <Button>
-                        <UploadOutlined /> 上传
-                    </Button>
-                </Upload>
-                <Button onClick={exportToJsonFile}>
-                    <ExportOutlined /> 导出
-                </Button>
-            </Space>
+        <div>
 
-            <Form.Item>
-                <Space>
-                    <Tooltip title={annotation.subGraph} color={'blue'}>
-                        <QuestionCircleOutlined />
-                        <span>子系统</span>
-                    </Tooltip>
-                    <Tooltip title={annotation.keyEffects} color={'blue'}>
-                        <QuestionCircleOutlined />
-                        <span> 关键指标</span>
-                    </Tooltip>
-                </Space>
-            </Form.Item>
+            <Row gutter={16}>
+                <Col span={8}>
+                    <Card title="配置" bordered={false} >
 
-            <Form.Item>
-                <Form.List name="list">
-                    {(subFields, subOpt) => (
-                        <div
-                            style={{ display: "flex", flexDirection: "column", rowGap: 16 }}
-                        >
-                            {subFields.map((subField) => (
-                                <div key={subField.key}>
-                                    <span>sub{subField.key}</span>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ flex: 1, marginRight: '10px' }}>
-                                            <Form.Item noStyle name={[subField.name, "effect"]}>
-                                                <Select
-                                                    mode="multiple"
-                                                    placeholder="选择一般参数"
-                                                    onChange={(values: string[]) => {
-                                                        values.forEach(value => {
-                                                            if (!selectedItems.includes(value)) {
-                                                                setSelectedItems(prevArray => [...prevArray, value]);
-                                                                setFilteredOptions(prevArray => prevArray.filter(e => e !== value));
-                                                            }
-                                                        });
-                                                    }}
-                                                    onDeselect={(value) => {
-                                                        setSelectedItems(prevArray => prevArray.filter(e => e !== value));
-                                                        setFilteredOptions(prevArray => [...prevArray, value]);
-                                                    }}
-                                                    options={filteredOptions.map((item) => ({
-                                                        value: item,
-                                                        label: item,
-                                                    }))}
-                                                />
-                                            </Form.Item>
-                                        </div>
-                                        <div style={{ flex: 1, marginRight: '10px' }}>
-                                            <Form.Item style={{ flex: 1, marginLeft: '10px' }} noStyle name={[subField.name, "key_effect"]}>
-                                                <Select
-                                                    mode="multiple"
-                                                    placeholder="选择关键指标"
-                                                    onChange={(values: string[]) => {
-                                                        values.forEach(value => {
-                                                            if (!selectedItems.includes(value)) {
-                                                                setSelectedItems(prevArray => [...prevArray, value]);
-                                                                setFilteredOptions(prevArray => prevArray.filter(e => e !== value));
-                                                            }
-                                                        });
-                                                    }}
-                                                    onDeselect={(value) => {
-                                                        setSelectedItems(prevArray => prevArray.filter(e => e !== value));
-                                                        setFilteredOptions(prevArray => [...prevArray, value]);
-                                                    }}
-                                                    options={filteredOptions.map((item) => ({
-                                                        value: item,
-                                                        label: item,
-                                                    }))}
-                                                />
-                                            </Form.Item>
-                                        </div>
-                                        <MinusCircleOutlined
-                                            onClick={() => {
-                                                subOpt.remove(subField.name);
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                            <Button type="dashed" onClick={() => subOpt.add()} block>
-                                + 添加子系统
-                            </Button>
+                        <div style={{ marginBottom: 20 }}>
+                            <Checkbox
+                                indeterminate={indeterminate}
+                                onChange={onCheckAllChange}
+                                checked={checkAll}
+                            >
+                                全选
+                            </Checkbox>
+                            <div style={{ borderTop: '1px dashed #8b8888', margin: '5px 0' }}></div>
+                            <div style={{ height: '300px', overflowY: 'auto' }}>
+                                <Checkbox.Group style={{ width: '100%' }} value={checkedList} onChange={onChange}>
+                                    <Row>
+                                        {filteredOptions.map(option => (
+                                            <Col span={24} key={option} style={{ margin: '5px 0' }}>
+                                                <Checkbox value={option}>{option}</Checkbox>
+                                            </Col>
+                                        ))}
+                                    </Row>
+                                </Checkbox.Group>
+                            </div>
                         </div>
-                    )}
-                </Form.List>
-            </Form.Item>
-            <Form.Item label="最终指标" name="final_effect">
-                <Select
-                    mode="multiple"
-                    placeholder="选择最终指标"
-                    onChange={(values: string[]) => {
-                        values.forEach(value => {
-                            if (!selectedItems.includes(value)) {
-                                setSelectedItems(prevArray => [...prevArray, value]);
-                                setFilteredOptions(prevArray => prevArray.filter(e => e !== value));
-                            }
-                        });
-                    }}
-                    onDeselect={(value) => {
-                        setSelectedItems(prevArray => prevArray.filter(e => e !== value));
-                        setFilteredOptions(prevArray => [...prevArray, value]);
-                    }}
-                    options={filteredOptions.map((item) => ({
-                        value: item,
-                        label: item,
-                    }))}
-                />
-            </Form.Item>
-            <Form.Item>
-                <Button type="primary" htmlType="submit">
-                    提交
-                </Button>
-            </Form.Item>
-        </Form>
+
+                        <Form
+                            form={form}
+                            wrapperCol={{ span: 24 }}
+                            autoComplete="off"
+                            onFinish={onFinish}
+                        >
+
+                            <Form.Item label="最终指标" name="final_effect">
+                                <Select
+                                    mode="multiple"
+                                    placeholder="选择最终指标"
+                                    onChange={(values: string[]) => {
+                                        values.forEach(value => {
+                                            if (!selectedItems.includes(value)) {
+                                                setSelectedItems(prevArray => [...prevArray, value]);
+                                                setFilteredOptions(prevArray => prevArray.filter(e => e !== value));
+                                            }
+                                        });
+                                    }}
+                                    onDeselect={(value) => {
+                                        setSelectedItems(prevArray => prevArray.filter(e => e !== value));
+                                        setFilteredOptions(prevArray => [...prevArray, value]);
+                                    }}
+                                    options={filteredOptions.map((item) => ({
+                                        value: item,
+                                        label: item,
+                                    }))}
+                                />
+                            </Form.Item>
+                            <Form.Item>
+                                <Button type="primary" htmlType="submit">
+                                    提交
+                                </Button>
+                            </Form.Item>
+                        </Form>
+                    </Card>
+                </Col>
+                <Col span={16}>
+                    <Card title="特征贡献度" bordered={false} >
+                        {shapData && getImages(shapData)}
+                    </Card>
+                </Col>
+            </Row>
+        </div>
     );
 };
 
