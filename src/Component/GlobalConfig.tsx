@@ -143,7 +143,7 @@ class GlobalConfig {
     // 生成 nodes 和 combos
     this.globalForm.list.forEach(({ effect, key_effect }, index) => {
       const comboId = `sub${index}`;
-      combos.push({ id: comboId, label: comboId });
+      // combos.push({ id: comboId, label: comboId });
 
       effect.forEach((effectName) => {
         nodes.push({ id: String(nodeIdCounter++), label: effectName, comboId: comboId });
@@ -160,20 +160,20 @@ class GlobalConfig {
     });
 
     // 生成 edges
-    for (let i = 0; i < this.initialGlobalForm.list.length; i++) {
-      const sourceComboId = `sub${i}`;
+    // for (let i = 0; i < this.initialGlobalForm.list.length; i++) {
+    //   const sourceComboId = `sub${i}`;
 
-      // 当前子系统到最终效应的边
-      this.globalForm.final_effect.forEach(() => {
-        edges.push({ source: sourceComboId, target: String(nodeIdCounter) });
-      });
+    //   // 当前子系统到最终效应的边
+    //   this.globalForm.final_effect.forEach(() => {
+    //     edges.push({ source: sourceComboId, target: String(nodeIdCounter) });
+    //   });
 
-      // 当前子系统到其他较大子系统的边
-      for (let j = i + 1; j < this.globalForm.list.length; j++) {
-        const targetComboId = `sub${j}`;
-        edges.push({ source: sourceComboId, target: targetComboId });
-      }
-    }
+    //   // 当前子系统到其他较大子系统的边
+    //   for (let j = i + 1; j < this.globalForm.list.length; j++) {
+    //     const targetComboId = `sub${j}`;
+    //     edges.push({ source: sourceComboId, target: targetComboId });
+    //   }
+    // }
 
     return { nodes, edges, combos };
   }

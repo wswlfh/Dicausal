@@ -419,8 +419,8 @@ const GLOBAL_SETTING = {
         graph.off('node:mouseleave', mouseleave);
         graph.on('node:mouseleave', mouseleave);
 
-        graph.off('node:contextmenu');
-        graph.on('node:contextmenu', nodeClick);
+        // graph.off('node:contextmenu');
+        // graph.on('node:contextmenu', nodeClick);
 
         graph.off('canvas:click')
         graph.on('canvas:click', resetEdges)
@@ -479,7 +479,7 @@ const GLOBAL_SETTING = {
                                 console.log(e)
                             }
                         })
-                        outDiv.innerHTML = `<li><b>sub</b>: ${model.comboId}</li>
+                        outDiv.innerHTML = `
                                         <li><b>name</b>: ${model.label}</li>
                                         <li><b>id</b>: ${model.id}</li>
                                         <li><b>type</b>: ${type}</li>
@@ -745,19 +745,22 @@ export const PriorKnowledge = ({ data }) => {
                     },
 
                     layout: {
-                        type: 'comboCombined',
-                        outerLayout: new G6.Layout['dagre']({
-                            rankdir: 'TB', // 布局的方向
-                            align: 'UL', // 可选
-                            nodesep: 20, // 节点间距
-                            ranksep: 30, // 层间距
-                            controlPoints: true, // 可选
-                        }),
-                        innerLayout: new G6.Layout['concentric']({
-                            preventOverlap: true, //防止重叠
-                            minNodeSpacing: 20
-                        }),
-
+                        // type: 'comboCombined',
+                        // outerLayout: new G6.Layout['dagre']({
+                        //     rankdir: 'TB', // 布局的方向
+                        //     align: 'UL', // 可选
+                        //     nodesep: 20, // 节点间距
+                        //     ranksep: 30, // 层间距
+                        //     controlPoints: true, // 可选
+                        // }),
+                        // innerLayout: new G6.Layout['concentric']({
+                        //     preventOverlap: true, //防止重叠
+                        //     minNodeSpacing: 20
+                        // }),
+                        type: 'random',
+                        center: [100, 100],
+                        width: 500,
+                        height: 500
                     },
                     groupByTypes: false,
                     enabledStack: true,

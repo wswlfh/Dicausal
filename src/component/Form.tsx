@@ -56,40 +56,14 @@ const App: React.FC = () => {
 
 
     const onFinish = async (values: FormData) => {
-        console.log("Received values of form:", values);
+        values.list = []
+        values.list.push({ sub: -1, effect: filteredOptions, key_effect: [] })
+        console.log( values);
         globalConfig.setGlobalForm(values);
         globalConfig.setIsDraw(true)
     };
 
-    const exportToJsonFile = () => {
-        const values = form.getFieldsValue();
-        const modifiedList = values.list.map((item: any, index: any) => {
-            return { sub: index, ...item };
-        });
-        const modifiedValues = { ...values, list: modifiedList };
-        const jsonString = JSON.stringify(modifiedValues, null, 2);
-        const blob = new Blob([jsonString], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "config.json";
-        a.click();
-        URL.revokeObjectURL(url);
-    };
 
-
-    const beforeUpload = (file: File) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const jsonString = e.target?.result?.toString();
-            if (jsonString) {
-                const values = JSON.parse(jsonString);
-                form.setFieldsValue(values);
-            }
-        };
-        reader.readAsText(file);
-        return false;
-    };
 
 
 
@@ -101,103 +75,8 @@ const App: React.FC = () => {
             autoComplete="off"
             onFinish={onFinish}
         >
-            <Space style={{ marginBottom: "15px" }}>
-                <Upload showUploadList={false} beforeUpload={beforeUpload}>
-                    <Button>
-                        <UploadOutlined /> 上传
-                    </Button>
-                </Upload>
-                <Button onClick={exportToJsonFile}>
-                    <ExportOutlined /> 导出
-                </Button>
-            </Space>
 
-            <Form.Item>
-                <Space>
-                    <Tooltip title={annotation.subGraph} color={'blue'}>
-                        <QuestionCircleOutlined />
-                        <span>子系统</span>
-                    </Tooltip>
-                    <Tooltip title={annotation.keyEffects} color={'blue'}>
-                        <QuestionCircleOutlined />
-                        <span> 关键指标</span>
-                    </Tooltip>
-                </Space>
-            </Form.Item>
 
-            <Form.Item>
-                <Form.List name="list">
-                    {(subFields, subOpt) => (
-                        <div
-                            style={{ display: "flex", flexDirection: "column", rowGap: 16 }}
-                        >
-                            {subFields.map((subField) => (
-                                <div key={subField.key}>
-                                    <span>sub{subField.key}</span>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ flex: 1, marginRight: '10px' }}>
-                                            <Form.Item noStyle name={[subField.name, "effect"]}>
-                                                <Select
-                                                    mode="multiple"
-                                                    placeholder="选择一般参数"
-                                                    onChange={(values: string[]) => {
-                                                        values.forEach(value => {
-                                                            if (!selectedItems.includes(value)) {
-                                                                setSelectedItems(prevArray => [...prevArray, value]);
-                                                                setFilteredOptions(prevArray => prevArray.filter(e => e !== value));
-                                                            }
-                                                        });
-                                                    }}
-                                                    onDeselect={(value) => {
-                                                        setSelectedItems(prevArray => prevArray.filter(e => e !== value));
-                                                        setFilteredOptions(prevArray => [...prevArray, value]);
-                                                    }}
-                                                    options={filteredOptions.map((item) => ({
-                                                        value: item,
-                                                        label: item,
-                                                    }))}
-                                                />
-                                            </Form.Item>
-                                        </div>
-                                        <div style={{ flex: 1, marginRight: '10px' }}>
-                                            <Form.Item style={{ flex: 1, marginLeft: '10px' }} noStyle name={[subField.name, "key_effect"]}>
-                                                <Select
-                                                    mode="multiple"
-                                                    placeholder="选择关键指标"
-                                                    onChange={(values: string[]) => {
-                                                        values.forEach(value => {
-                                                            if (!selectedItems.includes(value)) {
-                                                                setSelectedItems(prevArray => [...prevArray, value]);
-                                                                setFilteredOptions(prevArray => prevArray.filter(e => e !== value));
-                                                            }
-                                                        });
-                                                    }}
-                                                    onDeselect={(value) => {
-                                                        setSelectedItems(prevArray => prevArray.filter(e => e !== value));
-                                                        setFilteredOptions(prevArray => [...prevArray, value]);
-                                                    }}
-                                                    options={filteredOptions.map((item) => ({
-                                                        value: item,
-                                                        label: item,
-                                                    }))}
-                                                />
-                                            </Form.Item>
-                                        </div>
-                                        <MinusCircleOutlined
-                                            onClick={() => {
-                                                subOpt.remove(subField.name);
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                            <Button type="dashed" onClick={() => subOpt.add()} block>
-                                + 添加子系统
-                            </Button>
-                        </div>
-                    )}
-                </Form.List>
-            </Form.Item>
             <Form.Item label="最终指标" name="final_effect">
                 <Select
                     mode="multiple"

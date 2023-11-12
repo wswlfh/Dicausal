@@ -29,7 +29,6 @@ const App: React
             const handleDataChange = () => {
                 let newData = globalConfig.getG6Data();
                 if (newData && newData.nodes && newData.nodes.length > 0) { // 检查 newData 是否有效
-                    console.log('newDatanewDatanewData', newData);
                     setG6Data(newData);
                 }
             };
@@ -52,7 +51,7 @@ const App: React
                 );
                 globalConfig.setIsDraw(false)
             }
-        }, [g6Data,     ]);
+        }, [g6Data,]);
 
 
         // 用于存储和展示 tableData 的本地状态
@@ -89,62 +88,23 @@ const App: React
                     {/*<h5>Configuration</h5>*/}
                     <h5>配置</h5>
                     <div className="show-data" style={{}}>
-                        <Collapse>
-                            {/*<Panel key={0} header={"Data"}>*/}
-                            <Panel key={0} header={"数据集"} forceRender>
-                                <Space.Compact style={{ marginBottom: "15px" }}>
-                                    <UploadAndSet
-                                        onUploadSuccess={handleUploadSuccess}
-                                        onRemoveSuccess={handleRemoveSuccess}
-                                    />
+                        <UploadAndSet
+                            onUploadSuccess={handleUploadSuccess}
+                            onRemoveSuccess={handleRemoveSuccess}
+                        />
+                        <div id="table" style={{ margin: 5 }}>
+                            <Table
+                                columns={localTableData.columns}
+                                dataSource={localTableData.dataSource}
 
-
-                                </Space.Compact>
-                                <Collapse defaultActiveKey="1" ghost>
-                                    {/*<Panel header="Table" key="1">*/}
-                                    <Panel header="数据表格" key="1">
-                                        <div id="table">
-                                            <Table
-                                                columns={localTableData.columns}
-                                                dataSource={localTableData.dataSource}
-
-                                                scroll={{ y: 240, x: 'max-content' }}
-                                                size="small" />
-                                        </div>
-                                    </Panel>
-                                </Collapse>
-
-                            </Panel>
-                        </Collapse>
+                                scroll={{ y: 240, x: 'max-content' }}
+                                size="small" />
+                        </div>
+                    </div>
+                    <div style={{ marginTop: 10 }}>
+                        <ShowForm />
                     </div>
 
-                    <Collapse>
-                        {/*<Panel header="Threshold" key="2">*/}
-                        <Panel header="阈值设置" key="2" forceRender>
-
-                            <Select
-                                allowClear
-                                style={{ width: '160px' }}
-                                defaultValue="Low"
-                                placeholder="选择级别"
-                                onSelect={(value) => {
-                                    setThreshold(value)
-                                }}
-                                options={[
-                                    { label: 'Low', value: 'Low' },
-                                    { label: 'Medium', value: 'Medium' },
-                                    { label: 'High', value: 'High' },
-                                ]} />
-                        </Panel>
-                        <Panel header="配置项" key="1" forceRender>
-                            <div id="form">
-                                {/* <LayoutContext.Provider value={setFormDone}>
-                                    <ShowForm />
-                                </LayoutContext.Provider> */}
-                                <ShowForm />
-                            </div>
-                        </Panel>
-                    </Collapse>
 
 
                 </Sider>
@@ -154,13 +114,6 @@ const App: React
                         <span style={{ fontWeight: "bold" }}>DiCausal</span>
                     </Header>
                     <Content className="site-layout-background" style={{ margin: '0 8px' }}>
-                        {/* <div id="prior-knowledge">
-                            <LayoutContext.Provider value={threshold}>
-                                {g6Data && g6Data.nodes && g6Data.nodes.length > 0 ? <PriorKnowledge
-                                    key={Math.random()}
-                                    data={g6Data} /> : <Empty />}
-                            </LayoutContext.Provider>
-                        </div> */}
                         <div id="prior-knowledge">
                             <Empty />
                         </div>
@@ -203,7 +156,7 @@ const App: React
                             }, 3000);
                         }} loading={loadings[0]}>
                             {/*PC Algorithm*/}
-                            PC算法
+                            因果算法
                         </Button>
                     </div>
 
